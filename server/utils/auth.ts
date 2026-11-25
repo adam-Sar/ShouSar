@@ -25,12 +25,14 @@ export async function setSessionCookie(event: H3Event, userId: string) {
     .setExpirationTime('7d')
     .sign(getSecretKey(event))
 
+  const reqProto = getHeader(event, 'x-forwarded-proto') || getRequestURL(event).protocol.replace(':', '')
+
   setCookie(event, COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
-    secure: process.env.NODE_ENV === 'production'
+    secure: reqProto === 'https'
   })
 }
 
