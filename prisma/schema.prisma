@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  role         String    @default("USER")
+  bio          String?
+  roleTitle    String?   @default("كاتب ومساهم")
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  articles     Article[]
+  comments     Comment[]
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  nameAr   String
+  accent   String    @default("green")
+  order    Int       @default(0)
+  articles Article[]
+}
+
+model Article {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  lead            String
+  content         String
+  pullQuote       String?
+  pullQuoteAuthor String?
+  heroImage       String
+  imageCaption    String?
+  readTimeMinutes Int       @default(3)
+  status          String    @default("PUBLISHED")
+  isFeatured      Boolean   @default(false)
+  isBreaking      Boolean   @default(false)
+  tags            String    @default("")
+  views           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  publishedAt     DateTime  @default(now())
+
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model LiveUpdate {
+  id        String   @id @default(cuid())
+  title     String
+  summary   String?
+  linkSlug  String?
+  isUrgent  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

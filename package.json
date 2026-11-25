@@ -1,0 +1,31 @@
+{
+  "name": "shousar-news",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:push": "prisma db push",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.9.6",
+    "nuxt": "^3.16.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  }
+}
