@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Nuxt build & dev outputs
+.nuxt/
+.output/
+.nitro/
+.cache/
+.data/
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# SQLite & Prisma local database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+prisma/migrations/*_dev/
+
+# User uploaded media (keep folder tracked)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tsbuildinfo
