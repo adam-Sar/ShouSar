@@ -4,11 +4,14 @@ import type { ArticleItem, LiveUpdateItem, PaginationMeta } from '~/types/news'
 const { user } = useAuth()
 const page = ref(1)
 
-const [{ data: articleData }, { data: liveData }] = await Promise.all([
+const [{ data: articleData }, { data: breakingData }, { data: liveData }] = await Promise.all([
   useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(
     () => `/api/articles?page=${page.value}&limit=7`,
     { key: () => `home-articles-p${page.value}`, watch: [page] }
   ),
+  useFetch<{ articles: ArticleItem[] }>('/api/articles?breaking=1&limit=5', {
+    key: 'home-breaking'
+  }),
   useFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=12', { key: 'home-live' })
 ])
 
@@ -20,14 +23,15 @@ const leadStory = computed(() =>
   page.value === 1 ? articles.value.find((a) => a.isFeatured) ?? articles.value[0] ?? null : null
 )
 const secondaryStories = computed(() =>
-  page.value === 1
-    ? articles.value.filter((a) => a.id !== leadStory.value?.id)
-    : articles.value
+  page.value === 1 ? articles.value.filter((a) => a.id !== leadStory.value?.id) : articles.value
 )
 const breakingArticles = computed(() => {
-  const breaking = articles.value.filter((a) => a.isBreaking)
+  const breaking = breakingData.value?.articles ?? []
   return breaking.length > 0 ? breaking : articles.value.slice(0, 3)
 })
+const opinionStory = computed(
+  () => articles.value.find((a) => a.pullQuote) ?? leadStory.value ?? null
+)
 </script>
 
 <template>
@@ -41,7 +45,7 @@ const breakingArticles = computed(() => {
 
       <aside class="side-column">
         <TimelineFeed :updates="updates" />
-        <OpinionCard />
+        <OpinionCard :article="opinionStory" />
       </aside>
     </div>
 

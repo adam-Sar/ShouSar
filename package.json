@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare",
     "db:push": "prisma db push",
     "db:seed": "npx tsx prisma/seed.ts",
+    "test": "npx tsx --test tests/*.test.ts",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {

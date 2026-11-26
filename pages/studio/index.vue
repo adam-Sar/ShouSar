@@ -17,10 +17,10 @@ const [{ data: myData, refresh: refreshMine }, { data: savedData, refresh: refre
   await Promise.all([
     useFetch<{ articles: ArticleItem[] }>('/api/articles?mine=1&limit=40', { key: 'studio-my-articles' }),
     useFetch<{ articles: ArticleItem[] }>('/api/articles?bookmarked=1&limit=40', { key: 'studio-saved-articles' }),
-    useFetch<{ articles: ArticleItem[] }>(
-      () => (isStaff.value ? '/api/articles?all=1&limit=40' : '/api/articles?mine=1&limit=40'),
-      { key: 'studio-all-articles' }
-    )
+    useFetch<{ articles: ArticleItem[] }>('/api/articles?all=1&limit=40', {
+      key: 'studio-all-articles',
+      immediate: isStaff.value
+    })
   ])
 
 const displayedArticles = computed(() => {

@@ -36,6 +36,7 @@ const uploading = ref(false)
 const uploadingInline = ref(false)
 const saving = ref(false)
 const errorMsg = ref('')
+const unauthorizedEdit = ref(false)
 const contentInputRef = ref<HTMLTextAreaElement | null>(null)
 
 if (categories.value.length && !categoryId.value) {
@@ -46,17 +47,22 @@ if (editSlug.value) {
   try {
     const res = await $fetch<{ article: ArticleItem }>(`/api/articles/${encodeURIComponent(editSlug.value)}`)
     const a = res.article
-    title.value = a.title
-    lead.value = a.lead
-    content.value = a.content
-    categoryId.value = a.category.id
-    heroImage.value = a.heroImage
-    imageCaption.value = a.imageCaption || ''
-    pullQuote.value = a.pullQuote || ''
-    pullQuoteAuthor.value = a.pullQuoteAuthor || ''
-    tags.value = a.tags || ''
-    isFeatured.value = a.isFeatured
-    isBreaking.value = a.isBreaking
+    if (a.author.id !== user.value?.id && !isStaff.value) {
+      unauthorizedEdit.value = true
+      errorMsg.value = 'غير مسموح لك بتعديل هذا المقال لأنك لست كاتبه.'
+    } else {
+      title.value = a.title
+      lead.value = a.lead
+      content.value = a.content
+      categoryId.value = a.category.id
+      heroImage.value = a.heroImage
+      imageCaption.value = a.imageCaption || ''
+      pullQuote.value = a.pullQuote || ''
+      pullQuoteAuthor.value = a.pullQuoteAuthor || ''
+      tags.value = a.tags || ''
+      isFeatured.value = a.isFeatured
+      isBreaking.value = a.isBreaking
+    }
   } catch {
     errorMsg.value = 'تعذر تحميل بيانات المقال المطلوب تعديله'
   }
@@ -183,7 +189,12 @@ async function saveArticle(status: 'PUBLISHED' | 'DRAFT') {
       <NuxtLink to="/studio" class="glass-action-btn">العودة إلى الاستوديو</NuxtLink>
     </section>
 
-    <div class="studio-container crystal-glass">
+    <div v-if="unauthorizedEdit" class="studio-container crystal-glass">
+      <div class="form-error" style="margin-bottom: 16px;">{{ errorMsg }}</div>
+      <NuxtLink to="/studio" class="btn-primary-red">العودة إلى الاستوديو</NuxtLink>
+    </div>
+
+    <div v-else class="studio-container crystal-glass">
       <form class="glass-form" @submit.prevent="saveArticle('PUBLISHED')">
         <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
 

@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { ArticleItem } from '~/types/news'
 
-const { data } = await useFetch<{ articles: ArticleItem[] }>('/api/articles?limit=10', {
-  key: 'opinion-spotlight'
-})
+const props = defineProps<{
+  article?: ArticleItem | null
+}>()
+
+const { data } =
+  props.article === undefined
+    ? await useFetch<{ articles: ArticleItem[] }>('/api/articles?limit=10', {
+        key: 'opinion-spotlight'
+      })
+    : { data: ref(null) }
 
 const spotlight = computed(() => {
+  if (props.article !== undefined) return props.article
   const list = data.value?.articles ?? []
   return list.find((a) => a.pullQuote) ?? list[0] ?? null
 })
