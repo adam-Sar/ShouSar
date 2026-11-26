@@ -45,8 +45,18 @@ export interface ArticleItem {
   publishedAt: string
   author: PublicAuthor
   category: CategoryItem
-  _count?: { comments: number }
+  _count?: { comments: number; reactions?: number }
   comments?: ArticleComment[]
+  userReacted?: boolean
+  userBookmarked?: boolean
+}
+
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasMore: boolean
 }
 
 export interface LiveUpdateItem {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ArticleItem, CategoryItem } from '~/types/news'
+import type { ArticleItem, CategoryItem, PaginationMeta } from '~/types/news'
 
 useHead({ title: 'البحث والأرشيف | شو صار' })
 
@@ -9,6 +9,7 @@ const router = useRouter()
 const q = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const tag = ref(typeof route.query.tag === 'string' ? route.query.tag : '')
 const selectedCategory = ref(typeof route.query.category === 'string' ? route.query.category : '')
+const page = ref(1)
 
 const { data: catData } = await useFetch<{ categories: CategoryItem[] }>('/api/categories', {
   key: 'search-categories'
@@ -20,17 +21,20 @@ const apiUrl = computed(() => {
   if (q.value.trim()) params.set('q', q.value.trim())
   if (tag.value.trim()) params.set('tag', tag.value.trim())
   if (selectedCategory.value) params.set('category', selectedCategory.value)
-  params.set('limit', '30')
+  params.set('page', String(page.value))
+  params.set('limit', '12')
   return `/api/articles?${params.toString()}`
 })
 
-const { data, pending } = await useFetch<{ articles: ArticleItem[] }>(apiUrl, {
+const { data, pending } = await useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(apiUrl, {
   watch: [apiUrl]
 })
 
 const results = computed(() => data.value?.articles ?? [])
+const pagination = computed(() => data.value?.pagination ?? null)
 
 function applySearch() {
+  page.value = 1
   const query: Record<string, string> = {}
   if (q.value.trim()) query.q = q.value.trim()
   if (tag.value.trim()) query.tag = tag.value.trim()
@@ -47,6 +51,7 @@ function clearFilters() {
   q.value = ''
   tag.value = ''
   selectedCategory.value = ''
+  page.value = 1
   router.replace({ query: {} })
 }
 </script>
@@ -99,9 +104,23 @@ function clearFilters() {
       <p>جارٍ البحث في المقالات...</p>
     </div>
 
-    <section v-else-if="results.length" class="bottom-cards-row">
-      <NewsCard v-for="item in results" :key="item.id" :article="item" />
-    </section>
+    <template v-else-if="results.length">
+      <section class="bottom-cards-row">
+        <NewsCard v-for="item in results" :key="item.id" :article="item" />
+      </section>
+
+      <div v-if="pagination && pagination.totalPages > 1" class="pagination-bar">
+        <button type="button" class="glass-action-btn" :disabled="page <= 1" @click="page--">
+          السابق
+        </button>
+        <span style="font-size: 0.88rem; color: var(--text-secondary);">
+          صفحة {{ pagination.page }} من {{ pagination.totalPages }}
+        </span>
+        <button type="button" class="glass-action-btn" :disabled="!pagination.hasMore" @click="page++">
+          التالي
+        </button>
+      </div>
+    </template>
 
     <div v-else class="glass-section-banner crystal-glass">
       <div>

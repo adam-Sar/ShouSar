@@ -27,7 +27,10 @@ defineProps<{
       </h3>
 
       <div class="bottom-card-meta">
-        <span>{{ formatRelativeArabic(article.publishedAt) }} • قراءة {{ article.readTimeMinutes }} د</span>
+        <span>
+          {{ formatRelativeArabic(article.publishedAt) }} • {{ article.readTimeMinutes }} د
+          <template v-if="article._count?.reactions"> • {{ article._count.reactions }} إعجاب</template>
+        </span>
         <NuxtLink :to="`/author/${article.author.username}`">
           {{ article.author.name }}
         </NuxtLink>

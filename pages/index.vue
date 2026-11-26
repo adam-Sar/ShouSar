@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import type { ArticleItem, LiveUpdateItem } from '~/types/news'
+import type { ArticleItem, LiveUpdateItem, PaginationMeta } from '~/types/news'
 
 const { user } = useAuth()
+const page = ref(1)
 
 const [{ data: articleData }, { data: liveData }] = await Promise.all([
-  useFetch<{ articles: ArticleItem[] }>('/api/articles?limit=12', { key: 'home-articles' }),
+  useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(
+    () => `/api/articles?page=${page.value}&limit=7`,
+    { key: () => `home-articles-p${page.value}`, watch: [page] }
+  ),
   useFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=12', { key: 'home-live' })
 ])
 
 const articles = computed(() => articleData.value?.articles ?? [])
+const pagination = computed(() => articleData.value?.pagination ?? null)
 const updates = computed(() => liveData.value?.updates ?? [])
 
-const leadStory = computed(() => articles.value.find((a) => a.isFeatured) ?? articles.value[0] ?? null)
+const leadStory = computed(() =>
+  page.value === 1 ? articles.value.find((a) => a.isFeatured) ?? articles.value[0] ?? null : null
+)
 const secondaryStories = computed(() =>
-  articles.value.filter((a) => a.id !== leadStory.value?.id).slice(0, 6)
+  page.value === 1
+    ? articles.value.filter((a) => a.id !== leadStory.value?.id)
+    : articles.value
 )
 const breakingArticles = computed(() => {
   const breaking = articles.value.filter((a) => a.isBreaking)
@@ -25,7 +34,7 @@ const breakingArticles = computed(() => {
   <div>
     <BreakingTicker :articles="breakingArticles" />
 
-    <div class="top-news-grid">
+    <div v-if="page === 1" class="top-news-grid">
       <section>
         <LeadStoryCard v-if="leadStory" :article="leadStory" />
       </section>
@@ -39,6 +48,28 @@ const breakingArticles = computed(() => {
     <section v-if="secondaryStories.length" class="bottom-cards-row">
       <NewsCard v-for="story in secondaryStories" :key="story.id" :article="story" />
     </section>
+
+    <div v-if="pagination && pagination.totalPages > 1" class="pagination-bar">
+      <button
+        type="button"
+        class="glass-action-btn"
+        :disabled="page <= 1"
+        @click="page--"
+      >
+        الصفحة السابقة
+      </button>
+      <span style="font-size: 0.88rem; color: var(--text-secondary);">
+        صفحة {{ pagination.page }} من {{ pagination.totalPages }}
+      </span>
+      <button
+        type="button"
+        class="glass-action-btn"
+        :disabled="!pagination.hasMore"
+        @click="page++"
+      >
+        الصفحة التالية
+      </button>
+    </div>
 
     <section class="glass-section-banner crystal-glass" style="margin-top: 32px;">
       <div>

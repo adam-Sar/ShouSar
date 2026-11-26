@@ -21,7 +21,7 @@ export const articleWithRelations = {
     }
   },
   _count: {
-    select: { comments: true }
+    select: { comments: true, reactions: true }
   }
 } as const
 

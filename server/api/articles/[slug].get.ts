@@ -33,11 +33,41 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'المقال غير متاح للعرض العام' })
   }
 
+  // Deduplicate view count per browser session cookie for 30 minutes
   if (article.status === 'PUBLISHED') {
-    await db.article.update({
-      where: { id: article.id },
-      data: { views: { increment: 1 } }
-    })
+    const viewedCookie = getCookie(event, 'shousar_viewed') || ''
+    const viewedIds = viewedCookie.split(',').filter(Boolean)
+    if (!viewedIds.includes(article.id)) {
+      await db.article.update({
+        where: { id: article.id },
+        data: { views: { increment: 1 } }
+      })
+      article.views += 1
+      const nextViewed = [article.id, ...viewedIds].slice(0, 20).join(',')
+      setCookie(event, 'shousar_viewed', nextViewed, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 30
+      })
+    }
+  }
+
+  let userReacted = false
+  let userBookmarked = false
+  if (sessionUser) {
+    const [r, b] = await Promise.all([
+      db.reaction.findUnique({
+        where: { articleId_userId: { articleId: article.id, userId: sessionUser.id } },
+        select: { id: true }
+      }),
+      db.bookmark.findUnique({
+        where: { articleId_userId: { articleId: article.id, userId: sessionUser.id } },
+        select: { id: true }
+      })
+    ])
+    userReacted = Boolean(r)
+    userBookmarked = Boolean(b)
   }
 
   const related = await db.article.findMany({
@@ -50,5 +80,12 @@ export default defineEventHandler(async (event) => {
     take: 3
   })
 
-  return { article, related }
+  return {
+    article: {
+      ...article,
+      userReacted,
+      userBookmarked
+    },
+    related
+  }
 })
