@@ -283,6 +283,17 @@ async function saveArticle(status: 'PUBLISHED' | 'DRAFT') {
             <button type="button" class="glass-action-btn" @click="insertSnippet(' **نص عريض** ')">
               عريض B
             </button>
+            <button type="button" class="glass-action-btn" @click="insertSnippet('\n\n> نص الاقتباس المميز هنا\n— قائل الاقتباس\n\n')">
+              اقتباس مميز ❝
+            </button>
+            <button
+              v-if="pullQuote.trim()"
+              type="button"
+              class="glass-action-btn"
+              @click="insertSnippet('\n\n[quote]\n\n')"
+            >
+              تحديد موضع الاقتباس [quote]
+            </button>
             <button type="button" class="glass-action-btn" @click="insertSnippet('\n\n- نقطة أولى\n- نقطة ثانية\n\n')">
               قائمة نقطية
             </button>
@@ -303,7 +314,7 @@ async function saveArticle(status: 'PUBLISHED' | 'DRAFT') {
             v-model="content"
             class="glass-textarea"
             style="min-height: 280px;"
-            placeholder="اكتب تفاصيل الخبر أو التحليل هنا... استخدم ## للعناوين الفرعية و **للتأكيد**"
+            placeholder="اكتب تفاصيل الخبر هنا... يمكنك استخدام ## للعناوين، > للاقتباس في أي مكان، أو [quote] لتحديد مكان الاقتباس التحريري"
             required
           />
         </div>

@@ -16,6 +16,14 @@ function isSafeUrl(url: string): boolean {
   return url.startsWith('/uploads/') || url.startsWith('https://') || url.startsWith('http://')
 }
 
+function buildQuoteHtml(quote: string, author?: string | null): string {
+  const cleanQuote = escapeHtml(quote.trim().replace(/^["«]|["»]$/g, ''))
+  const cite = author?.trim()
+    ? `<cite class="quote-author-cite">— ${escapeHtml(author.trim().replace(/^[—-]\s*/, ''))}</cite>`
+    : ''
+  return `<blockquote class="editorial-pull-quote">"${cleanQuote}"${cite}</blockquote>`
+}
+
 export function renderArticleBody(
   content: string,
   pullQuote?: string | null,
@@ -31,6 +39,34 @@ export function renderArticleBody(
   let quoteInserted = false
 
   for (const block of blocks) {
+    if (block === '[quote]' && pullQuote) {
+      htmlParts.push(buildQuoteHtml(pullQuote, pullQuoteAuthor))
+      quoteInserted = true
+      continue
+    }
+
+    if (block.startsWith('> ')) {
+      const lines = block.split('\n').map((l) => l.trim())
+      const quoteLines: string[] = []
+      let inlineAuthor = ''
+
+      for (const line of lines) {
+        if (line.startsWith('> ')) {
+          quoteLines.push(line.slice(2).trim())
+        } else if (line.startsWith('—') || line.startsWith('--')) {
+          inlineAuthor = line
+        } else {
+          quoteLines.push(line)
+        }
+      }
+
+      if (quoteLines.length) {
+        htmlParts.push(buildQuoteHtml(quoteLines.join(' '), inlineAuthor || null))
+        quoteInserted = true
+      }
+      continue
+    }
+
     if (block.startsWith('## ')) {
       htmlParts.push(`<h2>${formatInline(block.slice(3).trim())}</h2>`)
       continue
@@ -60,13 +96,12 @@ export function renderArticleBody(
 
     if (paragraphCount === 2 && pullQuote && !quoteInserted) {
       quoteInserted = true
-      const cite = pullQuoteAuthor
-        ? `<cite class="quote-author-cite">— ${escapeHtml(pullQuoteAuthor)}</cite>`
-        : ''
-      htmlParts.push(
-        `<blockquote class="editorial-pull-quote">"${escapeHtml(pullQuote)}"${cite}</blockquote>`
-      )
+      htmlParts.push(buildQuoteHtml(pullQuote, pullQuoteAuthor))
     }
+  }
+
+  if (pullQuote && !quoteInserted) {
+    htmlParts.push(buildQuoteHtml(pullQuote, pullQuoteAuthor))
   }
 
   return htmlParts.join('\n')
