@@ -17,6 +17,8 @@ dist/
 # SQLite & Prisma local database
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 prisma/migrations/*_dev/
