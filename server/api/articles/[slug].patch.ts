@@ -1,6 +1,11 @@
 import { db } from '~/server/utils/db'
 import { requireAuth } from '~/server/utils/auth'
-import { articleWithRelations, estimateReadTime } from '~/server/utils/articles'
+import {
+  articleWithRelations,
+  deleteLocalUploadIfUnused,
+  estimateReadTime,
+  validateArticleInput
+} from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -35,6 +40,15 @@ export default defineEventHandler(async (event) => {
     isBreaking?: boolean
   }>(event)
 
+  validateArticleInput(body, true)
+
+  if (body.categoryId !== undefined && body.categoryId.trim() !== existing.categoryId) {
+    const category = await db.category.findUnique({ where: { id: body.categoryId.trim() } })
+    if (!category) {
+      throw createError({ statusCode: 400, statusMessage: 'التصنيف المختار غير صالح' })
+    }
+  }
+
   const updated = await db.$transaction(async (tx) => {
     if (isStaff && body.isFeatured === true) {
       await tx.article.updateMany({ where: { isFeatured: true }, data: { isFeatured: false } })
@@ -45,8 +59,8 @@ export default defineEventHandler(async (event) => {
     return tx.article.update({
       where: { id: existing.id },
       data: {
-        title: body.title?.trim() || existing.title,
-        lead: body.lead?.trim() || existing.lead,
+        title: body.title?.trim() ?? existing.title,
+        lead: body.lead?.trim() ?? existing.lead,
         content: nextContent,
         readTimeMinutes: estimateReadTime(nextContent),
         categoryId: body.categoryId?.trim() || existing.categoryId,
@@ -63,6 +77,10 @@ export default defineEventHandler(async (event) => {
       include: articleWithRelations
     })
   })
+
+  if (updated.heroImage !== existing.heroImage) {
+    await deleteLocalUploadIfUnused(existing.heroImage)
+  }
 
   return { article: updated }
 })

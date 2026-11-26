@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
   const authorUsername = typeof query.author === 'string' ? query.author.trim() : ''
   const mine = query.mine === '1'
   const bookmarked = query.bookmarked === '1'
+  const breakingOnly = query.breaking === '1'
   const showAll = query.all === '1'
   const page = Math.max(1, Number(query.page) || 1)
   const limit = Math.min(50, Math.max(1, Number(query.limit) || 12))
@@ -38,6 +39,10 @@ export default defineEventHandler(async (event) => {
 
   if (category) {
     where.category = { slug: category }
+  }
+
+  if (breakingOnly) {
+    where.isBreaking = true
   }
 
   if (authorUsername) {

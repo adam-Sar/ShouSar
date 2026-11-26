@@ -1,5 +1,6 @@
 import { db } from '~/server/utils/db'
 import { hashPassword, requireAuth, verifyPassword } from '~/server/utils/auth'
+import { deleteLocalUploadIfUnused, isSafeMediaUrl } from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireAuth(event)
@@ -14,8 +15,17 @@ export default defineEventHandler(async (event) => {
   }>(event)
 
   const name = body.name?.trim()
-  if (name !== undefined && name.length < 2) {
-    throw createError({ statusCode: 400, statusMessage: 'الاسم يجب أن يكون حرفين على الأقل' })
+  if (name !== undefined && (name.length < 2 || name.length > 80)) {
+    throw createError({ statusCode: 400, statusMessage: 'الاسم يجب أن يكون بين 2 و 80 حرفاً' })
+  }
+  if (body.roleTitle !== undefined && body.roleTitle.trim().length > 100) {
+    throw createError({ statusCode: 400, statusMessage: 'الصفة التحريرية طويلة جداً' })
+  }
+  if (body.bio !== undefined && body.bio.trim().length > 500) {
+    throw createError({ statusCode: 400, statusMessage: 'النبذة التعريفية يجب ألا تتجاوز 500 حرف' })
+  }
+  if (body.avatarUrl !== undefined && body.avatarUrl.trim() && !isSafeMediaUrl(body.avatarUrl)) {
+    throw createError({ statusCode: 400, statusMessage: 'رابط الصورة الشخصية غير صالح' })
   }
 
   let nextPasswordHash: string | undefined
@@ -50,6 +60,10 @@ export default defineEventHandler(async (event) => {
       avatarUrl: true
     }
   })
+
+  if (user.avatarUrl !== sessionUser.avatarUrl) {
+    await deleteLocalUploadIfUnused(sessionUser.avatarUrl)
+  }
 
   return { user }
 })

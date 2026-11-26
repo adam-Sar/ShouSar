@@ -1,13 +1,26 @@
 import type { H3Event } from 'h3'
+import { randomUUID } from 'node:crypto'
 import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
 import { db } from './db'
 
 const COOKIE_NAME = 'shousar_session'
+let devEphemeralSecret: string | null = null
 
 function getSecretKey(event: H3Event) {
   const config = useRuntimeConfig(event)
-  return new TextEncoder().encode(config.sessionSecret)
+  const secret = (config.sessionSecret || '').trim()
+  if (secret.length >= 32) {
+    return new TextEncoder().encode(secret)
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Server misconfiguration: SESSION_SECRET must be at least 32 characters'
+    })
+  }
+  devEphemeralSecret ??= `${randomUUID()}-${randomUUID()}`
+  return new TextEncoder().encode(devEphemeralSecret)
 }
 
 export async function hashPassword(password: string) {

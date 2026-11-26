@@ -1,5 +1,6 @@
 import { db } from '~/server/utils/db'
 import { requireAuth } from '~/server/utils/auth'
+import { deleteLocalUploadIfUnused } from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -20,5 +21,6 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.article.delete({ where: { id: existing.id } })
+  await deleteLocalUploadIfUnused(existing.heroImage)
   return { ok: true }
 })

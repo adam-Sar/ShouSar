@@ -13,8 +13,11 @@ export default defineEventHandler(async (event) => {
   }>(event)
 
   const title = body.title?.trim() || ''
-  if (title.length < 4) {
-    throw createError({ statusCode: 400, statusMessage: 'نص التحديث قصير جداً' })
+  if (title.length < 4 || title.length > 280) {
+    throw createError({ statusCode: 400, statusMessage: 'نص التحديث يجب أن يكون بين 4 و 280 حرفاً' })
+  }
+  if (body.summary && body.summary.trim().length > 600) {
+    throw createError({ statusCode: 400, statusMessage: 'ملخص التحديث طويل جداً' })
   }
 
   const update = await db.liveUpdate.create({

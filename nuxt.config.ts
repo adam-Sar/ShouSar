@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/glass.css'],
 
   runtimeConfig: {
-    sessionSecret: process.env.SESSION_SECRET || 'shousar-dev-secret-change-in-production-2026',
+    sessionSecret: process.env.SESSION_SECRET || '',
     public: {
       siteName: 'شو صار',
       siteNameEn: 'ShouSar'

@@ -38,18 +38,22 @@ export default defineEventHandler(async (event) => {
     const viewedCookie = getCookie(event, 'shousar_viewed') || ''
     const viewedIds = viewedCookie.split(',').filter(Boolean)
     if (!viewedIds.includes(article.id)) {
-      await db.article.update({
-        where: { id: article.id },
-        data: { views: { increment: 1 } }
-      })
-      article.views += 1
-      const nextViewed = [article.id, ...viewedIds].slice(0, 20).join(',')
-      setCookie(event, 'shousar_viewed', nextViewed, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 30
-      })
+      try {
+        await db.article.update({
+          where: { id: article.id },
+          data: { views: { increment: 1 } }
+        })
+        article.views += 1
+        const nextViewed = [article.id, ...viewedIds].slice(0, 20).join(',')
+        setCookie(event, 'shousar_viewed', nextViewed, {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 30
+        })
+      } catch {
+        // Ignore transient SQLite write contention so readers never get a 500
+      }
     }
   }
 

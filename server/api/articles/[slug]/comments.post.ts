@@ -22,8 +22,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ body?: string }>(event)
   const commentBody = body.body?.trim() || ''
 
-  if (commentBody.length < 2) {
-    throw createError({ statusCode: 400, statusMessage: 'يرجى كتابة تعليق لا يقل عن حرفين' })
+  if (commentBody.length < 2 || commentBody.length > 2000) {
+    throw createError({ statusCode: 400, statusMessage: 'التعليق يجب أن يكون بين حرفين و 2000 حرف' })
   }
 
   const comment = await db.comment.create({
