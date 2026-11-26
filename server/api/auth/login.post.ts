@@ -1,7 +1,9 @@
 import { db } from '~/server/utils/db'
 import { verifyPassword, setSessionCookie } from '~/server/utils/auth'
+import { enforceRateLimit } from '~/server/utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  enforceRateLimit(event, 'login', 15, 10 * 60 * 1000)
   const body = await readBody<{ email?: string; password?: string }>(event)
   const email = body.email?.trim().toLowerCase() || ''
   const password = body.password || ''

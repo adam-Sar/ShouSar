@@ -1,7 +1,9 @@
 import { db } from '~/server/utils/db'
 import { hashPassword, setSessionCookie } from '~/server/utils/auth'
+import { enforceRateLimit } from '~/server/utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  enforceRateLimit(event, 'register', 10, 15 * 60 * 1000)
   const body = await readBody<{
     name?: string
     username?: string
