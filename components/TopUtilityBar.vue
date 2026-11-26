@@ -2,16 +2,18 @@
 const { user, logout } = useAuth()
 const liveDate = ref('شو صار الآن')
 
+const { data: pulse } = await useFetch<{
+  weather: { city: string; temp: number; label: string }
+  usdRate: string
+}>('/api/meta/pulse', { key: 'top-pulse' })
+
 onMounted(() => {
-  const update = () => {
-    liveDate.value = new Date().toLocaleDateString('ar-LB', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
-  update()
+  liveDate.value = new Date().toLocaleDateString('ar-LB', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 })
 </script>
 
@@ -23,15 +25,20 @@ onMounted(() => {
     </div>
 
     <div class="top-bar-left">
-      <span>بيروت 24°C • صحو</span>
+      <span>
+        {{ pulse?.weather.city || 'بيروت' }} {{ pulse?.weather.temp ?? 24 }}°C • {{ pulse?.weather.label || 'صحو' }}
+      </span>
       <span>|</span>
-      <span>USD/LBP: 89,500</span>
+      <span>USD/LBP: {{ pulse?.usdRate || '89,500' }}</span>
       <span>|</span>
       <span>{{ liveDate }}</span>
 
       <template v-if="user">
         <NuxtLink to="/studio" class="top-bar-link">
           لوحة الكاتب ({{ user.name }})
+        </NuxtLink>
+        <NuxtLink to="/studio/profile" class="top-bar-link">
+          حسابي
         </NuxtLink>
         <button type="button" class="top-bar-btn-logout" @click="logout">
           خروج

@@ -236,17 +236,17 @@ body {
 
 .logo-img {
   width: 100%;
-  max-width: 370px;
+  max-width: 260px;
   height: auto;
   display: block;
-  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.25));
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
   transition: transform 0.35s ease, filter 0.35s ease;
   user-select: none;
 }
 
 .logo-wrap:hover .logo-img {
   transform: scale(1.03);
-  filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(255, 255, 255, 0.35));
+  filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(255, 255, 255, 0.45));
 }
 
 .logo-tagline {
@@ -263,7 +263,7 @@ body {
 }
 
 .compact-header .logo-img {
-  max-width: 250px;
+  max-width: 180px;
 }
 
 /* Sticky glass navbar */
@@ -288,7 +288,62 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(190%);
   border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  overflow-x: auto;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.mobile-glass-drawer {
+  margin-top: 10px;
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  background: rgba(18, 24, 34, 0.72);
+}
+
+.mobile-drawer-links {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.mobile-drawer-links a {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  transition: var(--trans-smooth);
+}
+
+.mobile-drawer-links a.active,
+.mobile-drawer-links a:hover {
+  background: rgba(210, 38, 48, 0.28);
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .desktop-nav-menu {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+  }
 }
 
 .nav-menu {

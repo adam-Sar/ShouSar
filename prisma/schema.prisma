@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  username     String    @unique
-  email        String    @unique
+  username     String     @unique
+  email        String     @unique
   passwordHash String
-  role         String    @default("USER")
+  role         String     @default("USER")
   bio          String?
-  roleTitle    String?   @default("كاتب ومساهم")
+  roleTitle    String?    @default("كاتب ومساهم")
   avatarUrl    String?
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime   @default(now())
   articles     Article[]
   comments     Comment[]
+  reactions    Reaction[]
+  bookmarks    Bookmark[]
 }
 
 model Category {
@@ -32,8 +34,8 @@ model Category {
 }
 
 model Article {
-  id              String    @id @default(cuid())
-  slug            String    @unique
+  id              String     @id @default(cuid())
+  slug            String     @unique
   title           String
   lead            String
   content         String
@@ -41,21 +43,23 @@ model Article {
   pullQuoteAuthor String?
   heroImage       String
   imageCaption    String?
-  readTimeMinutes Int       @default(3)
-  status          String    @default("PUBLISHED")
-  isFeatured      Boolean   @default(false)
-  isBreaking      Boolean   @default(false)
-  tags            String    @default("")
-  views           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  publishedAt     DateTime  @default(now())
+  readTimeMinutes Int        @default(3)
+  status          String     @default("PUBLISHED")
+  isFeatured      Boolean    @default(false)
+  isBreaking      Boolean    @default(false)
+  tags            String     @default("")
+  views           Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  publishedAt     DateTime   @default(now())
 
   authorId   String
-  author     User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categoryId String
-  category   Category  @relation(fields: [categoryId], references: [id])
+  category   Category   @relation(fields: [categoryId], references: [id])
   comments   Comment[]
+  reactions  Reaction[]
+  bookmarks  Bookmark[]
 }
 
 model Comment {
@@ -68,6 +72,29 @@ model Comment {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
+model Reaction {
+  id        String   @id @default(cuid())
+  type      String   @default("LIKE")
+  createdAt DateTime @default(now())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+}
+
 model LiveUpdate {
   id        String   @id @default(cuid())
   title     String
@@ -75,4 +102,9 @@ model LiveUpdate {
   linkSlug  String?
   isUrgent  Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  key   String @id
+  value String
 }
