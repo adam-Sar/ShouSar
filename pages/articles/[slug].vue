@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { ArticleItem, LiveUpdateItem } from '~/types/news'
 import { formatFullArabic, formatRelativeArabic } from '~/utils/formatDate'
+import { renderArticleBody } from '~/utils/renderArticleHtml'
 
 const route = useRoute()
 const slug = computed(() => String(route.params.slug || ''))
-const { user } = useAuth()
+const { user, isStaff } = useAuth()
 const { showToast } = useToast()
 
 const { data, error, refresh } = await useFetch<{
@@ -22,12 +23,14 @@ const article = computed(() => data.value?.article ?? null)
 const related = computed(() => data.value?.related ?? [])
 const updates = computed(() => liveData.value?.updates ?? [])
 
-const paragraphs = computed(() =>
-  (article.value?.content || '')
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-)
+const renderedBodyHtml = computed(() => {
+  if (!article.value) return ''
+  return renderArticleBody(
+    article.value.content,
+    article.value.pullQuote,
+    article.value.pullQuoteAuthor
+  )
+})
 
 const tagsList = computed(() =>
   (article.value?.tags || '')
@@ -40,11 +43,38 @@ useHead(() => ({
   title: article.value ? `${article.value.title} | شو صار` : 'المقال غير موجود | شو صار'
 }))
 
+useSeoMeta({
+  title: () => (article.value ? `${article.value.title} | شو صار` : 'شو صار'),
+  description: () => article.value?.lead || 'منصة شو صار الإخبارية',
+  ogTitle: () => article.value?.title || 'شو صار',
+  ogDescription: () => article.value?.lead || 'منصة شو صار الإخبارية',
+  ogImage: () => article.value?.heroImage || '/lebanon_bg.jpg',
+  twitterCard: 'summary_large_image'
+})
+
 const fontSize = ref(1.18)
 const readingPercent = ref(0)
 const commentText = ref('')
 const commentError = ref('')
 const postingComment = ref(false)
+const reacting = ref(false)
+const bookmarking = ref(false)
+
+const reacted = ref(false)
+const reactionsCount = ref(0)
+const bookmarked = ref(false)
+
+watch(
+  article,
+  (val) => {
+    if (val) {
+      reacted.value = Boolean(val.userReacted)
+      reactionsCount.value = val._count?.reactions ?? 0
+      bookmarked.value = Boolean(val.userBookmarked)
+    }
+  },
+  { immediate: true }
+)
 
 function changeFontSize(delta: number) {
   fontSize.value = Math.min(1.6, Math.max(0.95, Number((fontSize.value + delta * 0.1).toFixed(2))))
@@ -68,9 +98,50 @@ function shareArticle() {
 
 const whatsappUrl = computed(() => {
   if (!article.value) return '#'
-  const text = `${article.value.title}`
-  return `https://wa.me/?text=${encodeURIComponent(text)}`
+  return `https://wa.me/?text=${encodeURIComponent(article.value.title)}`
 })
+
+async function toggleReaction() {
+  if (!article.value) return
+  if (!user.value) {
+    await navigateTo('/login')
+    return
+  }
+  reacting.value = true
+  try {
+    const res = await $fetch<{ reacted: boolean; count: number }>(
+      `/api/articles/${encodeURIComponent(article.value.slug)}/react`,
+      { method: 'POST' }
+    )
+    reacted.value = res.reacted
+    reactionsCount.value = res.count
+  } catch {
+    showToast('تعذر تسجيل التفاعل')
+  } finally {
+    reacting.value = false
+  }
+}
+
+async function toggleBookmark() {
+  if (!article.value) return
+  if (!user.value) {
+    await navigateTo('/login')
+    return
+  }
+  bookmarking.value = true
+  try {
+    const res = await $fetch<{ bookmarked: boolean }>(
+      `/api/articles/${encodeURIComponent(article.value.slug)}/bookmark`,
+      { method: 'POST' }
+    )
+    bookmarked.value = res.bookmarked
+    showToast(res.bookmarked ? 'تم حفظ المقال في استوديو القراءة' : 'تمت إزالة المقال من المحفوظات')
+  } catch {
+    showToast('تعذر تحديث المحفوظات')
+  } finally {
+    bookmarking.value = false
+  }
+}
 
 async function submitComment() {
   if (!article.value || !commentText.value.trim()) return
@@ -88,6 +159,16 @@ async function submitComment() {
     commentError.value = err?.data?.statusMessage || 'تعذر إرسال التعليق'
   } finally {
     postingComment.value = false
+  }
+}
+
+async function deleteComment(id: string) {
+  try {
+    await $fetch(`/api/comments/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    showToast('تم حذف التعليق')
+    await refresh()
+  } catch {
+    showToast('تعذر حذف التعليق')
   }
 }
 
@@ -167,6 +248,25 @@ onMounted(() => {
 
           <div class="article-actions-strip crystal-glass">
             <div class="action-buttons-group">
+              <button
+                type="button"
+                class="glass-action-btn"
+                :class="{ 'action-active-red': reacted }"
+                :disabled="reacting"
+                @click="toggleReaction"
+              >
+                <span>{{ reacted ? 'أعجبني ✓' : 'أعجبني' }}</span>
+                <span>({{ reactionsCount }})</span>
+              </button>
+              <button
+                type="button"
+                class="glass-action-btn"
+                :class="{ 'action-active-green': bookmarked }"
+                :disabled="bookmarking"
+                @click="toggleBookmark"
+              >
+                {{ bookmarked ? 'محفوظ ✓' : 'حفظ' }}
+              </button>
               <button type="button" class="glass-action-btn share-btn" @click="shareArticle">
                 مشاركة
               </button>
@@ -177,11 +277,11 @@ onMounted(() => {
                 واتساب
               </a>
               <NuxtLink
-                v-if="user && (user.id === article.author.id || user.role === 'ADMIN' || user.role === 'EDITOR')"
+                v-if="user && (user.id === article.author.id || isStaff)"
                 :to="`/studio/editor?slug=${encodeURIComponent(article.slug)}`"
                 class="glass-action-btn"
               >
-                تعديل المقال
+                تعديل
               </NuxtLink>
             </div>
 
@@ -192,17 +292,8 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="article-rich-body" :style="{ fontSize: `${fontSize}rem` }">
-            <template v-for="(para, idx) in paragraphs" :key="idx">
-              <p>{{ para }}</p>
-              <blockquote v-if="idx === 1 && article.pullQuote" class="editorial-pull-quote">
-                "{{ article.pullQuote }}"
-                <cite v-if="article.pullQuoteAuthor" class="quote-author-cite">
-                  — {{ article.pullQuoteAuthor }}
-                </cite>
-              </blockquote>
-            </template>
-          </div>
+          <!-- Safe escaped & structured HTML output -->
+          <div class="article-rich-body" :style="{ fontSize: `${fontSize}rem` }" v-html="renderedBodyHtml" />
 
           <div v-if="tagsList.length" class="article-tags-wrap">
             <span class="tag-label">الكلمات الدالة:</span>
@@ -257,11 +348,21 @@ onMounted(() => {
             </div>
 
             <div v-for="comment in article.comments || []" :key="comment.id" class="comment-card">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 0.85rem;">
                 <NuxtLink :to="`/author/${comment.author.username}`" style="color: #38ef7d; font-weight: 800; text-decoration: none;">
                   {{ comment.author.name }}
                 </NuxtLink>
-                <span style="color: var(--text-muted);">{{ formatRelativeArabic(comment.createdAt) }}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="color: var(--text-muted);">{{ formatRelativeArabic(comment.createdAt) }}</span>
+                  <button
+                    v-if="user && (user.id === comment.author.id || isStaff)"
+                    type="button"
+                    class="top-bar-btn-logout"
+                    @click="deleteComment(comment.id)"
+                  >
+                    حذف
+                  </button>
+                </div>
               </div>
               <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6;">
                 {{ comment.body }}

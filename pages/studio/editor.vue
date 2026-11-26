@@ -33,8 +33,10 @@ const isFeatured = ref(false)
 const isBreaking = ref(false)
 
 const uploading = ref(false)
+const uploadingInline = ref(false)
 const saving = ref(false)
 const errorMsg = ref('')
+const contentInputRef = ref<HTMLTextAreaElement | null>(null)
 
 if (categories.value.length && !categoryId.value) {
   categoryId.value = categories.value[0].id
@@ -60,6 +62,24 @@ if (editSlug.value) {
   }
 }
 
+function insertSnippet(snippet: string) {
+  const el = contentInputRef.value
+  if (!el) {
+    content.value = content.value ? `${content.value}\n\n${snippet}` : snippet
+    return
+  }
+  const start = el.selectionStart ?? content.value.length
+  const end = el.selectionEnd ?? content.value.length
+  const before = content.value.slice(0, start)
+  const after = content.value.slice(end)
+  content.value = `${before}${snippet}${after}`
+  nextTick(() => {
+    el.focus()
+    const pos = start + snippet.length
+    el.setSelectionRange(pos, pos)
+  })
+}
+
 async function handleImageUpload(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -75,11 +95,35 @@ async function handleImageUpload(event: Event) {
       body: formData
     })
     heroImage.value = res.url
-    showToast('تم رفع الصورة بنجاح')
+    showToast('تم رفع صورة الغلاف بنجاح')
   } catch (err: any) {
     errorMsg.value = err?.data?.statusMessage || 'فشل رفع الصورة'
   } finally {
     uploading.value = false
+    input.value = ''
+  }
+}
+
+async function handleInlineImageUpload(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploadingInline.value = true
+  errorMsg.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await $fetch<{ url: string }>('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+    insertSnippet(`\n\n![وصف الصورة](${res.url})\n\n`)
+    showToast('تم إدراج الصورة داخل النص')
+  } catch (err: any) {
+    errorMsg.value = err?.data?.statusMessage || 'فشل رفع الصورة'
+  } finally {
+    uploadingInline.value = false
     input.value = ''
   }
 }
@@ -231,13 +275,35 @@ async function saveArticle(status: 'PUBLISHED' | 'DRAFT') {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="art-content">نص المقال الكامل (افصل بين الفقرات بسطر فارغ)</label>
+          <label class="form-label" for="art-content">نص المقال الكامل</label>
+          <div class="editor-toolbar">
+            <button type="button" class="glass-action-btn" @click="insertSnippet('\n\n## عنوان فرعي\n\n')">
+              عنوان فرعي H2
+            </button>
+            <button type="button" class="glass-action-btn" @click="insertSnippet(' **نص عريض** ')">
+              عريض B
+            </button>
+            <button type="button" class="glass-action-btn" @click="insertSnippet('\n\n- نقطة أولى\n- نقطة ثانية\n\n')">
+              قائمة نقطية
+            </button>
+            <label class="glass-action-btn" style="cursor: pointer;">
+              <span>{{ uploadingInline ? 'جارٍ الرفع...' : '+ إدراج صورة داخل النص' }}</span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style="display: none;"
+                :disabled="uploadingInline"
+                @change="handleInlineImageUpload"
+              />
+            </label>
+          </div>
           <textarea
             id="art-content"
+            ref="contentInputRef"
             v-model="content"
             class="glass-textarea"
-            style="min-height: 260px;"
-            placeholder="اكتب تفاصيل الخبر أو التحليل هنا..."
+            style="min-height: 280px;"
+            placeholder="اكتب تفاصيل الخبر أو التحليل هنا... استخدم ## للعناوين الفرعية و **للتأكيد**"
             required
           />
         </div>
@@ -281,13 +347,13 @@ async function saveArticle(status: 'PUBLISHED' | 'DRAFT') {
         </div>
 
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
-          <button type="submit" class="btn-primary-green" :disabled="saving || uploading">
+          <button type="submit" class="btn-primary-green" :disabled="saving || uploading || uploadingInline">
             {{ saving ? 'جارٍ الحفظ...' : editSlug ? 'حفظ ونشر التعديلات' : 'نشر المقال الآن' }}
           </button>
           <button
             type="button"
             class="glass-action-btn"
-            :disabled="saving || uploading"
+            :disabled="saving || uploading || uploadingInline"
             @click="saveArticle('DRAFT')"
           >
             حفظ كمسودة

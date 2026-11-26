@@ -10,24 +10,49 @@ const { data, refresh } = await useFetch<{ updates: LiveUpdateItem[] }>('/api/li
   key: 'live-room-feed'
 })
 
-const updates = computed(() => data.value?.updates ?? [])
+const updates = ref<LiveUpdateItem[]>(data.value?.updates ?? [])
+
+watch(data, (val) => {
+  if (val?.updates) updates.value = val.updates
+})
 
 const newTitle = ref('')
 const newSummary = ref('')
 const isUrgent = ref(false)
 const submitting = ref(false)
 const postError = ref('')
+const streamConnected = ref(false)
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let eventSource: EventSource | null = null
 
 onMounted(() => {
-  pollTimer = setInterval(() => {
-    refresh()
-  }, 30000)
+  if (typeof EventSource !== 'undefined') {
+    eventSource = new EventSource('/api/live/stream')
+    eventSource.onopen = () => {
+      streamConnected.value = true
+    }
+    eventSource.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data)
+        if (msg.type === 'created' && msg.update) {
+          if (!updates.value.some((u) => u.id === msg.update.id)) {
+            updates.value = [msg.update, ...updates.value]
+          }
+        } else if (msg.type === 'deleted' && msg.id) {
+          updates.value = updates.value.filter((u) => u.id !== msg.id)
+        }
+      } catch {
+        // ignore heartbeat / malformed message
+      }
+    }
+    eventSource.onerror = () => {
+      streamConnected.value = false
+    }
+  }
 })
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer)
+  eventSource?.close()
 })
 
 async function publishLiveFlash() {
@@ -53,6 +78,16 @@ async function publishLiveFlash() {
     submitting.value = false
   }
 }
+
+async function deleteLiveUpdate(id: string) {
+  try {
+    await $fetch(`/api/live/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    updates.value = updates.value.filter((u) => u.id !== id)
+    showToast('تم حذف التحديث')
+  } catch {
+    showToast('تعذر حذف التحديث')
+  }
+}
 </script>
 
 <template>
@@ -61,7 +96,9 @@ async function publishLiveFlash() {
       <div>
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
           <span class="urgent-badge">مباشر</span>
-          <span style="font-size: 0.82rem; color: var(--text-muted);">يتحدث تلقائياً كل 30 ثانية</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted);">
+            {{ streamConnected ? 'متصل بالبث الفوري (SSE)' : 'تحديث تلقائي' }}
+          </span>
         </div>
         <h1>غرفة الأخبار والتغطية اللحظية</h1>
         <p>متابعة متسلسلة للأنباء العاجلة والتطورات الميدانية والاقتصادية فور ورودها.</p>
@@ -104,6 +141,12 @@ async function publishLiveFlash() {
       </form>
     </div>
 
-    <TimelineFeed :updates="updates" title="التسلسل الزمني المباشر" :expanded="true" />
+    <TimelineFeed
+      :updates="updates"
+      title="التسلسل الزمني المباشر"
+      :expanded="true"
+      :can-delete="isStaff"
+      @delete="deleteLiveUpdate"
+    />
   </div>
 </template>

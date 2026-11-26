@@ -1,5 +1,6 @@
 import { db } from '~/server/utils/db'
 import { requireStaff } from '~/server/utils/auth'
+import { broadcastLiveEvent } from '~/server/utils/liveBus'
 
 export default defineEventHandler(async (event) => {
   await requireStaff(event)
@@ -23,6 +24,11 @@ export default defineEventHandler(async (event) => {
       linkSlug: body.linkSlug?.trim() || null,
       isUrgent: Boolean(body.isUrgent)
     }
+  })
+
+  broadcastLiveEvent({
+    type: 'created',
+    update: { ...update, createdAt: update.createdAt.toISOString() }
   })
 
   return { update }
