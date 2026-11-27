@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import type { CategoryItem } from '~/types/news'
-
 const { user } = useAuth()
 const route = useRoute()
 const mobileOpen = ref(false)
 
-const { data } = await useFetch<{ categories: CategoryItem[] }>('/api/categories', {
-  key: 'nav-categories'
-})
+const { data } = await useCategories()
 
 const categories = computed(() => data.value?.categories ?? [])
 

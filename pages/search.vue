@@ -11,9 +11,7 @@ const tag = ref(typeof route.query.tag === 'string' ? route.query.tag : '')
 const selectedCategory = ref(typeof route.query.category === 'string' ? route.query.category : '')
 const page = ref(1)
 
-const { data: catData } = await useFetch<{ categories: CategoryItem[] }>('/api/categories', {
-  key: 'search-categories'
-})
+const { data: catData } = await useCategories()
 const categories = computed(() => catData.value?.categories ?? [])
 
 const apiUrl = computed(() => {
@@ -26,7 +24,7 @@ const apiUrl = computed(() => {
   return `/api/articles?${params.toString()}`
 })
 
-const { data, pending } = await useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(apiUrl, {
+const { data, pending } = await useLazyFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(apiUrl, {
   watch: [apiUrl]
 })
 

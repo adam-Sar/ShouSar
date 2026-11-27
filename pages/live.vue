@@ -6,7 +6,7 @@ useHead({ title: 'البث المباشر والتغطية اللحظية | شو
 const { isStaff } = useAuth()
 const { showToast } = useToast()
 
-const { data, refresh } = await useFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=40', {
+const { data, refresh } = await useLazyFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=40', {
   key: 'live-room-feed'
 })
 

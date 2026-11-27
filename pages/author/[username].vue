@@ -4,9 +4,9 @@ import type { ArticleItem, PublicAuthor } from '~/types/news'
 const route = useRoute()
 const username = computed(() => String(route.params.username || ''))
 
-const { data, error } = await useFetch<{ author: PublicAuthor; articles: ArticleItem[] }>(
+const { data, error, pending } = await useLazyFetch<{ author: PublicAuthor; articles: ArticleItem[] }>(
   () => `/api/authors/${encodeURIComponent(username.value)}`,
-  { key: () => `author-${username.value}` }
+  { watch: [username] }
 )
 
 const author = computed(() => data.value?.author ?? null)
@@ -19,7 +19,11 @@ useHead(() => ({
 
 <template>
   <div>
-    <div v-if="error || !author" class="glass-section-banner crystal-glass">
+    <div v-if="pending && !author" class="glass-section-banner crystal-glass">
+      <p>جارٍ تحميل ملف الكاتب...</p>
+    </div>
+
+    <div v-else-if="error || !author" class="glass-section-banner crystal-glass">
       <div>
         <h1>الكاتب غير موجود</h1>
         <p>تعذر العثور على ملف هذا الكاتب.</p>

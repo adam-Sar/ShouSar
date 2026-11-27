@@ -4,16 +4,22 @@ import type { ArticleItem, LiveUpdateItem, PaginationMeta } from '~/types/news'
 const { user } = useAuth()
 const page = ref(1)
 
-const [{ data: articleData }, { data: breakingData }, { data: liveData }] = await Promise.all([
-  useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(
-    () => `/api/articles?page=${page.value}&limit=7`,
-    { key: () => `home-articles-p${page.value}`, watch: [page] }
-  ),
-  useFetch<{ articles: ArticleItem[] }>('/api/articles?breaking=1&limit=5', {
-    key: 'home-breaking'
-  }),
-  useFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=12', { key: 'home-live' })
-])
+const { data: articleData, pending } = await useLazyFetch<{
+  articles: ArticleItem[]
+  pagination: PaginationMeta
+}>(() => `/api/articles?page=${page.value}&limit=7`, {
+  watch: [page]
+})
+
+const { data: breakingData } = await useLazyFetch<{ articles: ArticleItem[] }>(
+  '/api/articles?breaking=1&limit=5',
+  { key: 'home-breaking' }
+)
+
+const { data: liveData } = await useLazyFetch<{ updates: LiveUpdateItem[] }>(
+  '/api/live?limit=12',
+  { key: 'home-live' }
+)
 
 const articles = computed(() => articleData.value?.articles ?? [])
 const pagination = computed(() => articleData.value?.pagination ?? null)
@@ -38,42 +44,48 @@ const opinionStory = computed(
   <div>
     <BreakingTicker :articles="breakingArticles" />
 
-    <div v-if="page === 1" class="top-news-grid">
-      <section>
-        <LeadStoryCard v-if="leadStory" :article="leadStory" />
+    <div v-if="pending && !articles.length" class="glass-section-banner crystal-glass">
+      <p>جارٍ تحميل الأخبار...</p>
+    </div>
+
+    <template v-else>
+      <div v-if="page === 1" class="top-news-grid">
+        <section>
+          <LeadStoryCard v-if="leadStory" :article="leadStory" />
+        </section>
+
+        <aside class="side-column">
+          <TimelineFeed :updates="updates" />
+          <OpinionCard :article="opinionStory" />
+        </aside>
+      </div>
+
+      <section v-if="secondaryStories.length" class="bottom-cards-row">
+        <NewsCard v-for="story in secondaryStories" :key="story.id" :article="story" />
       </section>
 
-      <aside class="side-column">
-        <TimelineFeed :updates="updates" />
-        <OpinionCard :article="opinionStory" />
-      </aside>
-    </div>
-
-    <section v-if="secondaryStories.length" class="bottom-cards-row">
-      <NewsCard v-for="story in secondaryStories" :key="story.id" :article="story" />
-    </section>
-
-    <div v-if="pagination && pagination.totalPages > 1" class="pagination-bar">
-      <button
-        type="button"
-        class="glass-action-btn"
-        :disabled="page <= 1"
-        @click="page--"
-      >
-        الصفحة السابقة
-      </button>
-      <span style="font-size: 0.88rem; color: var(--text-secondary);">
-        صفحة {{ pagination.page }} من {{ pagination.totalPages }}
-      </span>
-      <button
-        type="button"
-        class="glass-action-btn"
-        :disabled="!pagination.hasMore"
-        @click="page++"
-      >
-        الصفحة التالية
-      </button>
-    </div>
+      <div v-if="pagination && pagination.totalPages > 1" class="pagination-bar">
+        <button
+          type="button"
+          class="glass-action-btn"
+          :disabled="page <= 1"
+          @click="page--"
+        >
+          الصفحة السابقة
+        </button>
+        <span style="font-size: 0.88rem; color: var(--text-secondary);">
+          صفحة {{ pagination.page }} من {{ pagination.totalPages }}
+        </span>
+        <button
+          type="button"
+          class="glass-action-btn"
+          :disabled="!pagination.hasMore"
+          @click="page++"
+        >
+          الصفحة التالية
+        </button>
+      </div>
+    </template>
 
     <section class="glass-section-banner crystal-glass" style="margin-top: 32px;">
       <div>

@@ -15,9 +15,7 @@ if (!user.value) {
   await navigateTo('/login')
 }
 
-const { data: catData } = await useFetch<{ categories: CategoryItem[] }>('/api/categories', {
-  key: 'editor-categories'
-})
+const { data: catData } = await useCategories()
 const categories = computed(() => catData.value?.categories ?? [])
 
 const title = ref('')

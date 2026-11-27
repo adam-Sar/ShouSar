@@ -9,13 +9,14 @@ watch(slug, () => {
   page.value = 1
 })
 
-const [{ data: categoriesData }, { data: articlesData }] = await Promise.all([
-  useFetch<{ categories: CategoryItem[] }>('/api/categories', { key: 'cat-hub-list' }),
-  useFetch<{ articles: ArticleItem[]; pagination: PaginationMeta }>(
-    () => `/api/articles?category=${encodeURIComponent(slug.value)}&page=${page.value}&limit=10`,
-    { key: () => `cat-articles-${slug.value}-p${page.value}`, watch: [slug, page] }
-  )
-])
+const { data: categoriesData } = await useCategories()
+
+const { data: articlesData, pending } = await useLazyFetch<{
+  articles: ArticleItem[]
+  pagination: PaginationMeta
+}>(() => `/api/articles?category=${encodeURIComponent(slug.value)}&page=${page.value}&limit=10`, {
+  watch: [slug, page]
+})
 
 const currentCategory = computed(() =>
   categoriesData.value?.categories.find((c) => c.slug === slug.value) ?? null
@@ -42,7 +43,11 @@ useHead(() => ({
       </NuxtLink>
     </section>
 
-    <template v-if="articles.length">
+    <div v-if="pending" class="glass-section-banner crystal-glass">
+      <p>جارٍ تحميل أخبار {{ currentCategory?.nameAr || 'القسم' }}...</p>
+    </div>
+
+    <template v-else-if="articles.length">
       <div v-if="leadArticle" style="margin-bottom: 26px;">
         <LeadStoryCard :article="leadArticle" />
       </div>

@@ -8,14 +8,14 @@ const slug = computed(() => String(route.params.slug || ''))
 const { user, isStaff } = useAuth()
 const { showToast } = useToast()
 
-const { data, error, refresh } = await useFetch<{
+const { data, error, refresh, pending } = await useLazyFetch<{
   article: ArticleItem
   related: ArticleItem[]
 }>(() => `/api/articles/${encodeURIComponent(slug.value)}`, {
-  key: () => `article-${slug.value}`
+  watch: [slug]
 })
 
-const { data: liveData } = await useFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=8', {
+const { data: liveData } = await useLazyFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=8', {
   key: 'article-sidebar-live'
 })
 
@@ -190,7 +190,11 @@ onMounted(() => {
       <div class="reading-progress-bar" :style="{ width: `${readingPercent}%` }" />
     </div>
 
-    <div v-if="error || !article" class="glass-section-banner crystal-glass">
+    <div v-if="pending && !article" class="glass-section-banner crystal-glass">
+      <p>جارٍ تحميل المقال...</p>
+    </div>
+
+    <div v-else-if="error || !article" class="glass-section-banner crystal-glass">
       <div>
         <h1>المقال غير موجود</h1>
         <p>قد يكون الرابط غير صحيح أو تم حذف المقال من قبل الكاتب.</p>
