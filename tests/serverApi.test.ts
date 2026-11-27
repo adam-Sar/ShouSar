@@ -1,10 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { PrismaClient } from '@prisma/client'
 import { isSafeMediaUrl, validateArticleInput } from '../server/utils/articles'
+
+function loadDatabaseUrl(): string {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL
+  if (existsSync('.env')) {
+    const line = readFileSync('.env', 'utf-8')
+      .split(/\r?\n/)
+      .find((l) => l.trim().startsWith('DATABASE_URL='))
+    if (line) {
+      return line.slice(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')
+    }
+  }
+  throw new Error('DATABASE_URL must be set in environment or .env to run integration tests')
+}
 
 test('isSafeMediaUrl allows http(s) and /uploads/ but rejects javascript:/data:', () => {
   assert.equal(isSafeMediaUrl('https://example.com/a.jpg'), true)
@@ -64,7 +77,7 @@ test('end-to-end auth permissions, upload cleanup, and validation against built 
   const outputEntry = resolve('.output/server/index.mjs')
   assert.ok(existsSync(outputEntry), 'Run npm run build before running integration tests')
 
-  const dbPath = resolve('prisma/dev.db').replace(/\\/g, '/')
+  const databaseUrl = loadDatabaseUrl()
   const port = 3466
   const baseUrl = `http://127.0.0.1:${port}`
 
@@ -73,13 +86,13 @@ test('end-to-end auth permissions, upload cleanup, and validation against built 
       ...process.env,
       PORT: String(port),
       HOST: '127.0.0.1',
-      DATABASE_URL: `file:${dbPath}`,
+      DATABASE_URL: databaseUrl,
       SESSION_SECRET: 'shousar-integration-test-secret-key-at-least-32-chars'
     },
     stdio: 'pipe'
   })
 
-  const prisma = new PrismaClient()
+  const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } })
   const stamp = Date.now()
   const userA = `test_a_${stamp}`
   const userB = `test_b_${stamp}`

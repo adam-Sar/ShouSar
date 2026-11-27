@@ -6,12 +6,12 @@ A full-stack Lebanese news and open community publishing platform built with **N
 
 - **Frontend / SSR**: Nuxt 3, Vue 3 (`<script setup>`), TypeScript, Arabic RTL (`Cairo` & `Noto Serif`)
 - **Backend API**: Nitro server routes (`server/api/**`)
-- **Database**: Prisma ORM (`prisma/schema.prisma`) using SQLite (`prisma/dev.db`) locally, ready to swap to PostgreSQL
+- **Database**: Prisma ORM (`prisma/schema.prisma`) connected to PostgreSQL (Neon)
 - **Auth**: Cookie-based JWT sessions (`jose` + `bcryptjs`)
 
 ## Getting Started
 
-1. Install dependencies and prepare the local SQLite database:
+1. Install dependencies, add your Neon PostgreSQL `DATABASE_URL` and `SESSION_SECRET` to `.env`, and push the schema:
 
 ```bash
 npm install

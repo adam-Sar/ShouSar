@@ -50,15 +50,15 @@ export default defineEventHandler(async (event) => {
   }
 
   if (tag) {
-    where.tags = { contains: tag }
+    where.tags = { contains: tag, mode: 'insensitive' }
   }
 
   if (q) {
     where.OR = [
-      { title: { contains: q } },
-      { lead: { contains: q } },
-      { content: { contains: q } },
-      { tags: { contains: q } }
+      { title: { contains: q, mode: 'insensitive' } },
+      { lead: { contains: q, mode: 'insensitive' } },
+      { content: { contains: q, mode: 'insensitive' } },
+      { tags: { contains: q, mode: 'insensitive' } }
     ]
   }
 
