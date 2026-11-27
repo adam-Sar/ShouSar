@@ -517,6 +517,12 @@ body {
   grid-template-columns: 2.2fr 1.1fr;
   gap: 24px;
   margin-bottom: 24px;
+  align-items: stretch;
+}
+
+.top-news-grid > section {
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 960px) {
@@ -530,18 +536,27 @@ body {
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .lead-media {
   position: relative;
-  height: 380px;
+  flex: 1 1 380px;
+  min-height: 340px;
   overflow: hidden;
   background: #111;
+}
+
+.lead-media > a {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .lead-media img {
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: cover;
   transition: transform 0.6s ease;
 }
@@ -561,15 +576,16 @@ body {
   padding: 4px 14px;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 2;
 }
 
 .lead-glass-body {
-  padding: 24px 26px;
+  padding: 22px 26px;
   background: rgba(18, 24, 34, 0.45);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .lead-meta {
@@ -604,6 +620,10 @@ body {
   margin-bottom: 12px;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   transition: color 0.2s;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .lead-heading a {
@@ -621,6 +641,10 @@ body {
   color: var(--text-secondary);
   line-height: 1.65;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -663,16 +687,22 @@ body {
 }
 
 .timeline-scroll-container {
-  max-height: 350px;
+  max-height: 285px;
   overflow-y: auto;
   padding-left: 10px;
   padding-right: 4px;
+  padding-bottom: 18px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.05);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 84%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 84%, transparent 100%);
 }
 
 .timeline-scroll-container.timeline-expanded {
   max-height: none;
+  padding-bottom: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .timeline-scroll-container::-webkit-scrollbar {
@@ -803,6 +833,10 @@ body {
   line-height: 1.6;
   margin-bottom: 10px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .opinion-by {
