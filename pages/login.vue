@@ -3,23 +3,11 @@ useHead({ title: 'تسجيل الدخول | شو صار' })
 
 const { login } = useAuth()
 const { showToast } = useToast()
-const isDev = import.meta.dev
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
-
-function fillDemo(type: 'admin' | 'writer') {
-  if (!import.meta.dev) return
-  if (type === 'admin') {
-    email.value = 'admin@shousar.lb'
-    password.value = 'ShouSarAdmin2026!'
-  } else {
-    email.value = 'fouad@shousar.lb'
-    password.value = 'ShouSarWriter2026!'
-  }
-}
 
 async function handleLogin() {
   errorMsg.value = ''
@@ -76,23 +64,6 @@ async function handleLogin() {
         {{ loading ? 'جارٍ التحقق...' : 'دخول إلى الاستوديو' }}
       </button>
     </form>
-
-    <div
-      v-if="isDev"
-      style="margin-top: 22px; padding-top: 18px; border-top: 1px dashed rgba(255,255,255,0.18);"
-    >
-      <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">
-        حسابات جاهزة للتجربة السريعة (بيئة التطوير فقط):
-      </div>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <button type="button" class="glass-action-btn" @click="fillDemo('admin')">
-          تعبئة حساب رئيس التحرير (Admin)
-        </button>
-        <button type="button" class="glass-action-btn" @click="fillDemo('writer')">
-          تعبئة حساب كاتب (د. فؤاد)
-        </button>
-      </div>
-    </div>
 
     <p style="text-align: center; margin-top: 22px; font-size: 0.9rem; color: var(--text-secondary);">
       ليس لديك حساب؟
