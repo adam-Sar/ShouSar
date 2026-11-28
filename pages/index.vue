@@ -4,21 +4,21 @@ import type { ArticleItem, LiveUpdateItem, PaginationMeta } from '~/types/news'
 const { user } = useAuth()
 const page = ref(1)
 
-const { data: articleData, pending } = await useLazyFetch<{
-  articles: ArticleItem[]
-  pagination: PaginationMeta
-}>(() => `/api/articles?page=${page.value}&limit=7`, {
-  watch: [page]
-})
+const [{ data: articleData, pending }, { data: liveData }] = await Promise.all([
+  useLazyFetch<{
+    articles: ArticleItem[]
+    pagination: PaginationMeta
+  }>(() => `/api/articles?page=${page.value}&limit=7`, {
+    watch: [page]
+  }),
+  useLazyFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=12', {
+    key: 'home-live'
+  })
+])
 
-const { data: breakingData } = await useLazyFetch<{ articles: ArticleItem[] }>(
+const { data: breakingData } = useLazyFetch<{ articles: ArticleItem[] }>(
   '/api/articles?breaking=1&limit=5',
-  { key: 'home-breaking' }
-)
-
-const { data: liveData } = await useLazyFetch<{ updates: LiveUpdateItem[] }>(
-  '/api/live?limit=12',
-  { key: 'home-live' }
+  { key: 'home-breaking', server: false }
 )
 
 const articles = computed(() => articleData.value?.articles ?? [])

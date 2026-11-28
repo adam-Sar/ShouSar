@@ -29,7 +29,7 @@ export interface ArticleItem {
   slug: string
   title: string
   lead: string
-  content: string
+  content?: string
   pullQuote?: string | null
   pullQuoteAuthor?: string | null
   heroImage: string

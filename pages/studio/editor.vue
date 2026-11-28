@@ -51,7 +51,7 @@ if (editSlug.value) {
     } else {
       title.value = a.title
       lead.value = a.lead
-      content.value = a.content
+      content.value = a.content || ''
       categoryId.value = a.category.id
       heroImage.value = a.heroImage
       imageCaption.value = a.imageCaption || ''

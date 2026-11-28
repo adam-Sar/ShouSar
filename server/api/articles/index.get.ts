@@ -1,6 +1,6 @@
 import { db } from '~/server/utils/db'
 import { getSessionUser } from '~/server/utils/auth'
-import { articleWithRelations } from '~/server/utils/articles'
+import { articleCardSelect } from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -15,7 +15,9 @@ export default defineEventHandler(async (event) => {
   const page = Math.max(1, Number(query.page) || 1)
   const limit = Math.min(50, Math.max(1, Number(query.limit) || 12))
 
-  const sessionUser = await getSessionUser(event)
+  // Only look up session user when the query depends on auth/role
+  const needsAuth = mine || bookmarked || showAll
+  const sessionUser = needsAuth ? await getSessionUser(event) : null
   const isStaff = sessionUser && (sessionUser.role === 'ADMIN' || sessionUser.role === 'EDITOR')
 
   const where: Record<string, unknown> = {}
@@ -62,25 +64,27 @@ export default defineEventHandler(async (event) => {
     ]
   }
 
-  const [total, articles] = await Promise.all([
-    db.article.count({ where }),
-    db.article.findMany({
-      where,
-      include: articleWithRelations,
-      orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }],
-      skip: (page - 1) * limit,
-      take: limit
-    })
-  ])
+  const articlesPromise = db.article.findMany({
+    where,
+    select: articleCardSelect,
+    orderBy: [{ isFeatured: 'desc' }, { publishedAt: 'desc' }],
+    skip: (page - 1) * limit,
+    take: limit
+  })
 
-  const totalPages = Math.max(1, Math.ceil(total / limit))
+  const [total, articles] = breakingOnly
+    ? [0, await articlesPromise]
+    : await Promise.all([db.article.count({ where }), articlesPromise])
+
+  const effectiveTotal = breakingOnly ? articles.length : total
+  const totalPages = Math.max(1, Math.ceil(effectiveTotal / limit))
 
   return {
     articles,
     pagination: {
       page,
       limit,
-      total,
+      total: effectiveTotal,
       totalPages,
       hasMore: page < totalPages
     }

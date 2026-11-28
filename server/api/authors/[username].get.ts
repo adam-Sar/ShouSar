@@ -1,5 +1,5 @@
 import { db } from '~/server/utils/db'
-import { articleWithRelations, publicAuthorSelect } from '~/server/utils/articles'
+import { articleCardSelect, publicAuthorSelect } from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const username = getRouterParam(event, 'username')
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
       authorId: author.id,
       status: 'PUBLISHED'
     },
-    include: articleWithRelations,
+    select: articleCardSelect,
     orderBy: { publishedAt: 'desc' }
   })
 

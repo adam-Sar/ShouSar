@@ -11,7 +11,7 @@ defineProps<{
   <article class="bottom-news-card crystal-glass crystal-interactive">
     <div class="bottom-card-thumb">
       <NuxtLink :to="`/articles/${article.slug}`">
-        <img :src="article.heroImage" :alt="article.title" />
+        <img :src="article.heroImage" :alt="article.title" loading="lazy" decoding="async" />
       </NuxtLink>
     </div>
 

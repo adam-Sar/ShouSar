@@ -27,6 +27,28 @@ export const articleWithRelations = {
   }
 } as const
 
+// Omit large article bodies when rendering lists/cards
+export const articleCardSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  lead: true,
+  pullQuote: true,
+  pullQuoteAuthor: true,
+  heroImage: true,
+  imageCaption: true,
+  readTimeMinutes: true,
+  status: true,
+  isFeatured: true,
+  isBreaking: true,
+  tags: true,
+  views: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+  ...articleWithRelations
+} as const
+
 export function estimateReadTime(text: string): number {
   const words = text.trim().split(/\s+/).filter(Boolean).length
   return Math.max(1, Math.ceil(words / 160))

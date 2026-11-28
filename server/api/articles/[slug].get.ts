@@ -1,6 +1,6 @@
 import { db } from '~/server/utils/db'
 import { getSessionUser } from '~/server/utils/auth'
-import { articleWithRelations, publicAuthorSelect } from '~/server/utils/articles'
+import { articleCardSelect, articleWithRelations, publicAuthorSelect } from '~/server/utils/articles'
 
 export default defineEventHandler(async (event) => {
   const rawSlug = getRouterParam(event, 'slug')
@@ -9,18 +9,28 @@ export default defineEventHandler(async (event) => {
   }
 
   const slug = decodeURIComponent(rawSlug)
-  const sessionUser = await getSessionUser(event)
-
-  const article = await db.article.findUnique({
-    where: { slug },
-    include: {
-      ...articleWithRelations,
-      comments: {
-        include: { author: { select: publicAuthorSelect } },
-        orderBy: { createdAt: 'desc' }
+  const [sessionUser, article, related] = await Promise.all([
+    getSessionUser(event),
+    db.article.findUnique({
+      where: { slug },
+      include: {
+        ...articleWithRelations,
+        comments: {
+          include: { author: { select: publicAuthorSelect } },
+          orderBy: { createdAt: 'desc' }
+        }
       }
-    }
-  })
+    }),
+    db.article.findMany({
+      where: {
+        status: 'PUBLISHED',
+        slug: { not: slug }
+      },
+      select: articleCardSelect,
+      orderBy: [{ publishedAt: 'desc' }],
+      take: 3
+    })
+  ])
 
   if (!article) {
     throw createError({ statusCode: 404, statusMessage: 'المقال غير موجود' })
@@ -33,27 +43,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'المقال غير متاح للعرض العام' })
   }
 
-  // Deduplicate view count per browser session cookie for 30 minutes
+  // Deduplicate view count per browser session cookie for 30 minutes without blocking the response
   if (article.status === 'PUBLISHED') {
     const viewedCookie = getCookie(event, 'shousar_viewed') || ''
     const viewedIds = viewedCookie.split(',').filter(Boolean)
     if (!viewedIds.includes(article.id)) {
-      try {
-        await db.article.update({
+      article.views += 1
+      const nextViewed = [article.id, ...viewedIds].slice(0, 20).join(',')
+      setCookie(event, 'shousar_viewed', nextViewed, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 30
+      })
+      // shortcut: fire-and-forget view write so remote DB latency doesn't delay article render
+      db.article
+        .update({
           where: { id: article.id },
           data: { views: { increment: 1 } }
         })
-        article.views += 1
-        const nextViewed = [article.id, ...viewedIds].slice(0, 20).join(',')
-        setCookie(event, 'shousar_viewed', nextViewed, {
-          httpOnly: true,
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 30
-        })
-      } catch {
-        // Ignore transient SQLite write contention so readers never get a 500
-      }
+        .catch(() => {})
     }
   }
 
@@ -73,16 +82,6 @@ export default defineEventHandler(async (event) => {
     userReacted = Boolean(r)
     userBookmarked = Boolean(b)
   }
-
-  const related = await db.article.findMany({
-    where: {
-      status: 'PUBLISHED',
-      id: { not: article.id }
-    },
-    include: articleWithRelations,
-    orderBy: [{ publishedAt: 'desc' }],
-    take: 3
-  })
 
   return {
     article: {

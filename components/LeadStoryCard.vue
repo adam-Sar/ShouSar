@@ -12,7 +12,7 @@ defineProps<{
     <div class="lead-media">
       <span class="lead-flag-tag">{{ article.category.nameAr }}</span>
       <NuxtLink :to="`/articles/${article.slug}`">
-        <img :src="article.heroImage" :alt="article.title" />
+        <img :src="article.heroImage" :alt="article.title" decoding="async" />
       </NuxtLink>
     </div>
 

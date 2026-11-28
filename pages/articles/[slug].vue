@@ -15,8 +15,9 @@ const { data, error, refresh, pending } = await useLazyFetch<{
   watch: [slug]
 })
 
-const { data: liveData } = await useLazyFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=8', {
-  key: 'article-sidebar-live'
+const { data: liveData } = useLazyFetch<{ updates: LiveUpdateItem[] }>('/api/live?limit=8', {
+  key: 'article-sidebar-live',
+  server: false
 })
 
 const article = computed(() => data.value?.article ?? null)
@@ -26,7 +27,7 @@ const updates = computed(() => liveData.value?.updates ?? [])
 const renderedBodyHtml = computed(() => {
   if (!article.value) return ''
   return renderArticleBody(
-    article.value.content,
+    article.value.content || '',
     article.value.pullQuote,
     article.value.pullQuoteAuthor
   )

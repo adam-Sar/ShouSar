@@ -2,10 +2,10 @@
 const { user, logout } = useAuth()
 const liveDate = ref('شو صار الآن')
 
-const { data: pulse } = await useFetch<{
+const { data: pulse } = useLazyFetch<{
   weather: { city: string; temp: number; label: string }
   usdRate: string
-}>('/api/meta/pulse', { key: 'top-pulse' })
+}>('/api/meta/pulse', { key: 'top-pulse', server: false })
 
 onMounted(() => {
   liveDate.value = new Date().toLocaleDateString('ar-LB', {
